@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VDR · Calendário de Conteúdo</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:     #0a1628;
+    --navy-2:   #0f2040;
+    --navy-3:   #162a50;
+    --teal:     #00c896;
+    --teal-dim: #00a07a;
+    --teal-glow:rgba(0,200,150,0.15);
+    --border:   rgba(0,200,150,0.18);
+    --border-2: rgba(255,255,255,0.07);
+    --text:     #f0f4ff;
+    --text-muted: #7a9ab8;
+    --surface:  rgba(15,32,64,0.85);
+    --surface-2:rgba(22,42,80,0.9);
+    --danger:   #ff4d6a;
+    --warning:  #f59e0b;
+    --info:     #38bdf8;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--navy);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  /* BACKGROUND */
+  .bg-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: 
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(0,200,150,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 50% at 0% 50%, rgba(0,100,200,0.08) 0%, transparent 60%),
+      linear-gradient(160deg, #0a1628 0%, #0c1e3a 40%, #091520 100%);
+    pointer-events: none;
+  }
+  .bg-grid {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-image: 
+      linear-gradient(rgba(0,200,150,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,200,150,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .app-wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 24px 40px;
+  }
+
+  /* HEADER */
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .logo-area { display: flex; align-items: center; gap: 16px; }
+  .logo-img { height: 36px; }
+  .logo-divider { width: 1px; height: 28px; background: var(--border); }
+  .logo-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--teal);
+    opacity: 0.8;
+  }
+  .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .conn-badge {
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Syne', sans-serif;
+    letter-spacing: 0.5px;
+    color: var(--teal);
+    padding: 5px 12px;
+    background: var(--teal-glow);
+    border: 1px solid rgba(0,200,150,0.3);
+    border-radius: 20px;
+  }
+
+  /* BUTTONS */
+  button {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border-2);
+    background: var(--surface-2);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  button:hover { border-color: var(--teal); color: var(--teal); }
+  button.primary {
+    background: var(--teal);
+    border-color: var(--teal);
+    color: var(--navy);
+    font-weight: 700;
+    font-family: 'Syne', sans-serif;
+    letter-spacing: 0.3px;
+  }
+  button.primary:hover { background: #00e0a8; border-color: #00e0a8; color: var(--navy); }
+  button.danger { border-color: rgba(255,77,106,0.3); color: var(--danger); background: transparent; }
+  button.danger:hover { background: var(--danger); color: white; border-color: var(--danger); }
+  button.ghost {
+    background: transparent;
+    border: 2px dashed var(--border);
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  button.ghost:hover { border-color: var(--teal); color: var(--teal); }
+
+  /* LOGIN SCREEN */
+  .login-screen {
+    max-width: 560px;
+    margin: 60px auto;
+    padding: 40px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    backdrop-filter: blur(20px);
+  }
+  .login-logo { height: 40px; margin-bottom: 28px; display: block; }
+  .login-screen h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .login-screen p { color: var(--text-muted); margin-bottom: 24px; font-size: 14px; }
+  .hint-box {
+    background: rgba(0,200,150,0.07);
+    border-left: 3px solid var(--teal);
+    padding: 16px 18px;
+    border-radius: 4px 8px 8px 4px;
+    margin-bottom: 20px;
+    font-size: 13px;
+  }
+  .hint-box strong { color: var(--teal); }
+  .hint-box ol { margin-left: 18px; margin-top: 8px; }
+  .hint-box li { margin-bottom: 5px; color: var(--text-muted); }
+  .hint-box a { color: var(--teal); }
+  .login-note {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-2);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* FORM ELEMENTS */
+  label {
+    font-size: 11px;
+    color: var(--teal);
+    font-weight: 600;
+    font-family: 'Syne', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: block;
+    margin-bottom: 6px;
+  }
+  input, textarea, select {
+    width: 100%;
+    background: rgba(10,22,40,0.8);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.2s;
+    appearance: none;
+  }
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(0,200,150,0.1);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  .form-row { display: flex; flex-direction: column; margin-bottom: 14px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 4px; }
+  .form-row.full { grid-column: 1 / -1; }
+
+  /* CLIENT TABS */
+  .clients-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    backdrop-filter: blur(16px);
+  }
+  .clients-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-right: 4px;
+    flex-shrink: 0;
+  }
+  .client-tabs { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+  .client-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-radius: 99px;
+    border: 1px solid var(--border-2);
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .client-tab:hover { border-color: var(--border); color: var(--text); }
+  .client-tab.active {
+    background: var(--teal-glow);
+    border-color: rgba(0,200,150,0.4);
+    color: var(--teal);
+    font-weight: 600;
+  }
+  .client-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .client-count {
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(255,255,255,0.08);
+    padding: 1px 7px;
+    border-radius: 10px;
+  }
+  .client-tab.active .client-count { background: rgba(0,200,150,0.25); color: var(--teal); }
+  .add-client-btn {
+    border: 1px dashed var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 99px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .add-client-btn:hover { border-color: var(--teal); color: var(--teal); }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border-2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    backdrop-filter: blur(12px);
+  }
+  .stat-icon {
+    font-size: 18px;
+    width: 36px; height: 36px;
+    background: rgba(0,200,150,0.08);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .stat-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--text);
+  }
+  .stat-lbl {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-top: 2px;
+    font-weight: 600;
+  }
+
+  /* NAV BAR */
+  .nav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    gap: 16px;
+    flex-wrap: wrap;
+    backdrop-filter: blur(16px);
+  }
+  .month-nav { display: flex; align-items: center; gap: 12px; }
+  .month-display {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    min-width: 210px;
+    text-align: center;
+    text-transform: capitalize;
+    letter-spacing: 0.5px;
+  }
+  .nav-btn {
+    width: 34px; height: 34px;
+    padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    border-radius: 8px;
+  }
+
+  /* CALENDAR GRID */
+  .calendar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    backdrop-filter: blur(16px);
+  }
+  .weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: rgba(0,200,150,0.05);
+    border-bottom: 1px solid var(--border);
+  }
+  .weekday {
+    padding: 12px 8px;
+    text-align: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--teal);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background: var(--border-2);
+  }
+  .day {
+    background: var(--navy);
+    min-height: 112px;
+    padding: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .day:hover { background: rgba(15,32,64,0.95); }
+  .day.empty { cursor: default; background: rgba(10,22,40,0.5); pointer-events: none; }
+  .day.today .day-number {
+    background: var(--teal);
+    color: var(--navy);
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800;
+  }
+  .day.selected { outline: 2px solid var(--teal); outline-offset: -2px; }
+  .day-number {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 5px;
+    color: var(--text-muted);
+  }
+  .day.today .day-number { color: var(--navy); }
+  .day-content { display: flex; flex-direction: column; gap: 3px; flex: 1; overflow: hidden; }
+  .post-pill {
+    font-size: 10px;
+    padding: 3px 7px;
+    border-radius: 4px;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+  }
+  .post-count {
+    position: absolute;
+    top: 5px; right: 5px;
+    width: 17px; height: 17px;
+    border-radius: 50%;
+    font-size: 9px;
+    font-weight: 800;
+    font-family: 'Syne', sans-serif;
+    color: var(--navy);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* EDITOR */
+  .editor {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    backdrop-filter: blur(16px);
+  }
+  .editor-empty {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--text-muted);
+  }
+  .editor-empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+  .editor-empty p { font-size: 14px; }
+  .editor-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .editor-date {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px;
+    font-weight: 800;
+    text-transform: capitalize;
+  }
+  .editor-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+  /* POST CARDS */
+  .posts-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; }
+  .post-card {
+    background: rgba(10,22,40,0.7);
+    border: 1px solid var(--border-2);
+    border-radius: 10px;
+    padding: 16px;
+    border-left: 3px solid var(--border);
+    transition: border-left-color 0.2s;
+  }
+  .post-card:hover { border-left-color: var(--teal); }
+  .post-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .platform-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Syne', sans-serif;
+    padding: 4px 10px;
+    border-radius: 20px;
+    color: white;
+  }
+  .status-badge {
+    font-size: 10px;
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-family: 'Syne', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .status-ideia    { background: rgba(122,154,184,0.15); color: #7a9ab8; }
+  .status-rascunho { background: rgba(245,158,11,0.15);  color: #f59e0b; }
+  .status-aprovado { background: rgba(56,189,248,0.15);  color: #38bdf8; }
+  .status-agendado { background: rgba(168,85,247,0.15);  color: #c084fc; }
+  .status-publicado{ background: rgba(0,200,150,0.15);   color: var(--teal); }
+
+  .asana-link {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-decoration: none;
+    margin-left: auto;
+    font-family: 'Syne', sans-serif;
+    letter-spacing: 0.3px;
+  }
+  .asana-link:hover { color: var(--teal); }
+
+  .save-indicator {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'Syne', sans-serif;
+  }
+  .save-indicator.saving { color: var(--warning); }
+  .save-indicator.saved  { color: var(--teal); }
+  .save-indicator.error  { color: var(--danger); }
+
+  .post-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+
+  .add-post-btn {
+    width: 100%;
+    padding: 13px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5,12,25,0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 16px;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: #0d1e38;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  }
+  .modal h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+  .modal p { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+
+  /* LOADING */
+  .loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5,12,25,0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    flex-direction: column;
+    gap: 18px;
+    backdrop-filter: blur(4px);
+  }
+  .loading-overlay.show { display: flex; }
+  .spinner {
+    width: 44px; height: 44px;
+    border: 3px solid rgba(0,200,150,0.15);
+    border-top-color: var(--teal);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    color: var(--teal);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    background: var(--navy-3);
+    border: 1px solid rgba(0,200,150,0.4);
+    color: var(--teal);
+    padding: 12px 20px;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 999;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* FORM HINT */
+  .form-hint {
+    background: rgba(0,200,150,0.06);
+    border: 1px solid rgba(0,200,150,0.2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .form-hint strong { color: var(--teal); }
+
+  @media (max-width: 768px) {
+    .app-wrap { padding: 0 12px 32px; }
+    .day { min-height: 80px; padding: 4px; }
+    .day-number { font-size: 11px; }
+    .post-pill { font-size: 9px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .month-display { font-size: 15px; min-width: 160px; }
+    .weekday { padding: 8px 2px; font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-layer"></div>
+<div class="bg-grid"></div>
+
+<div class="app-wrap">
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="logo-area">
+      <img class="logo-img" id="headerLogo" src="" alt="VDR">
+      <div class="logo-divider"></div>
+      <span class="logo-label">Calendário de Conteúdo</span>
+    </div>
+    <div class="header-right">
+      <span id="connectionStatus" class="conn-badge" style="display:none"></span>
+      <button id="syncBtn" onclick="syncFromAsana()" style="display:none">⟳ Sync</button>
+      <button id="disconnectBtn" onclick="disconnect()" style="display:none" class="danger">Desconectar</button>
+    </div>
+  </header>
+
+  <!-- LOGIN -->
+  <div id="loginScreen" style="display:none">
+    <div class="login-screen">
+      <img class="login-logo" id="loginLogo" src="" alt="VDR Audiovisual">
+      <h2>Conectar ao Asana</h2>
+      <p>Insira seu Personal Access Token do Asana para acessar os calendários de conteúdo.</p>
+      <div class="hint-box">
+        <strong>Como gerar seu token:</strong>
+        <ol>
+          <li>Acesse <a href="https://app.asana.com/0/my-apps" target="_blank">Asana → My Apps</a></li>
+          <li>Clique em <strong>"+ Create new token"</strong></li>
+          <li>Dê um nome (ex: "VDR Calendário") e crie</li>
+          <li>Copie o token (só aparece uma vez!) e cole abaixo</li>
+        </ol>
+      </div>
+      <div class="form-row">
+        <label>Personal Access Token</label>
+        <input type="password" id="tokenInput" placeholder="2/123.../abc..." autocomplete="off">
+      </div>
+      <div style="margin-top: 16px; display: flex; justify-content: flex-end;">
+        <button class="primary" onclick="connectFromInput()">Conectar</button>
+      </div>
+      <p class="login-note">O token fica salvo apenas no seu navegador (localStorage). Não é enviado para nenhum servidor além do próprio Asana.</p>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="mainApp" style="display:none">
+    <div class="clients-bar">
+      <span class="clients-label">Cliente</span>
+      <div class="client-tabs" id="clientTabs"></div>
+      <button class="add-client-btn" onclick="openProfileModal()">+ Novo Cliente</button>
+    </div>
+
+    <div class="stats-bar" id="statsBar"></div>
+
+    <div class="nav-bar">
+      <div class="month-nav">
+        <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
+        <div class="month-display" id="monthDisplay"></div>
+        <button class="nav-btn" onclick="changeMonth(1)">›</button>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <select id="yearSelect" onchange="changeYear(this.value)" style="width:auto; padding: 8px 12px;"></select>
+        <button onclick="goToToday()">Hoje</button>
+      </div>
+    </div>
+
+    <div class="calendar">
+      <div class="weekdays">
+        <div class="weekday">Dom</div>
+        <div class="weekday">Seg</div>
+        <div class="weekday">Ter</div>
+        <div class="weekday">Qua</div>
+        <div class="weekday">Qui</div>
+        <div class="weekday">Sex</div>
+        <div class="weekday">Sáb</div>
+      </div>
+      <div class="days" id="daysGrid"></div>
+    </div>
+
+    <div class="editor" id="editor">
+      <div class="editor-empty">
+        <div class="editor-empty-icon">📅</div>
+        <p>Selecione uma data no calendário para gerenciar o conteúdo</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOVO CLIENTE -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal">
+    <h2>Novo Cliente</h2>
+    <p>Cria um projeto no Asana com seções padrão (Ideias, Rascunhos, Aprovados, Agendados, Publicados).</p>
+    <div class="form-row">
+      <label>Nome do Cliente</label>
+      <input type="text" id="profileNameInput" placeholder="Ex.: Base, Marca X, Cliente Y">
+    </div>
+    <div class="form-row">
+      <label>Cor de identificação</label>
+      <select id="profileColorInput">
+        <option value="dark-teal">Verde Teal</option>
+        <option value="dark-blue">Azul</option>
+        <option value="dark-purple">Roxo</option>
+        <option value="dark-green">Verde</option>
+        <option value="dark-orange">Laranja</option>
+        <option value="dark-pink">Rosa</option>
+        <option value="dark-red">Vermelho</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeProfileModal()">Cancelar</button>
+      <button class="primary" onclick="createProfile()">Criar</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">Carregando...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ─── ASSETS ──────────────────────────────────────────────
+  const LOGO_B64 = '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AO20AeAUV7//AMMy/wDU3f8AlN/+20f8My/9Td/5Tf8A7bQB4BRXv/8AwzL/ANTd/wCU3/7bR/wzL/1N3/lN/wDttAHgFFe//wDDMv8A1N3/AJTf/ttH/DMv/U3f+U3/AO20AeAUV7//AMMy/wDU3f8AlN/+20f8My/9Td/5Tf8A7bQB4BRXv/8AwzL/ANTd/wCU3/7bR/wzL/1N3/lN/wDttAHgFFe//wDDMv8A1N3/AJTf/ttH/DMv/U3f+U3/AO20AeAUV7//AMMy/wDU3f8AlN/+20f8My/9Td/5Tf8A7bQB4BRXv/8AwzL/ANTd/wCU3/7bR/wzL/1N3/lN/wDttAHgFFe//wDDMv8A1N3/AJTf/ttH/DMv/U3f+U3/AO20AeAUV7//AMMy/wDU3f8AlN/+20f8My/9Td/5Tf8A7bQB4BRXv/8AwzL/ANTd/wCU3/7bR/wzL/1N3/lN/wDttAHgFFe//wDDMv8A1N3/AJTf/ttH/DMv/U3f+U3/AO20AeAUV7//AMMy/wDU3f8AlN/+20f8My/9Td/5Tf8A7bQB4BRXv/8AwzL/ANTd/wCU3/7bR/wzL/1N3/lN/wDttAHgFFe//wDDMv8A1N3/AJTf/ttH/DMv/U3f+U3/AO20AeAUV7//AMMy/wDU3f8AlN/+20f8My/9Td/5Tf8A7bQB4BRXv/8AwzL/ANTd/wCU3/7bR/wzL/1N3/lN/wDttAHgFFe//wDDMv8A1N3/AJTf/ttH/DMv/U3f+U3/AO20AeAUV7//AMMy/wDU3f8AlN/+20f8My/9Td/5Tf8A7bQB4BRXv/8AwzL/ANTd/wCU3/7bR/wzL/1N3/lN/wDttAHgFFe//wDDMv8A1N3/AJTf/ttH/DMv/U3f+U3/AO20AeAUV7//AMMy/wDU3f8AlN/+20f8My/9Td/5Tf8A7bQB4BRXv/8AwzL/ANTd/wCU3/7bR/wzL/1N3/lN/wDttAHgFFe//wDDMv8A1N3/AJTf/ttH/DMv/U3f+U3/AO20AeAUV7//AMMy/wDU3f8AlN/+20f8My/9Td/5Tf8A7bQB4BRXv/8AwzL/ANTd/wCU3/7bR/wzL/1N3/lN/wDttAHkHgT/AJKH4a/7Ctr/AOjVr7frw/Qv2eP7E8Q6Zq3/AAlPnfYbuK58r+z9u/Y4bbnzDjOMZwa9woAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAP//Z';
+  const logoSrc = 'data:image/png;base64,' + LOGO_B64;
+  document.getElementById('headerLogo').src = logoSrc;
+  document.getElementById('loginLogo').src = logoSrc;
+
+  // ─── CONFIG ──────────────────────────────────────────────
+  const TOKEN_KEY = 'vdr_asana_pat_v1';
+  const API_BASE  = 'https://app.asana.com/api/1.0';
+  const PROJECT_PREFIX = 'Conteudo - ';
+
+  const PLATFORMS = {
+    instagram: { name: 'Instagram', short: 'IG',       color: '#E4405F', icon: '📷' },
+    linkedin:  { name: 'LinkedIn',  short: 'LinkedIn', color: '#0A66C2', icon: '💼' },
+    twitter:   { name: 'Twitter/X', short: 'X',        color: '#1DA1F2', icon: '🐦' },
+    tiktok:    { name: 'TikTok',    short: 'TikTok',   color: '#1a1a2e', icon: '🎵' },
+    facebook:  { name: 'Facebook',  short: 'FB',       color: '#1877F2', icon: '👥' },
+    youtube:   { name: 'YouTube',   short: 'YT',       color: '#FF0000', icon: '▶️' },
+    threads:   { name: 'Threads',   short: 'Threads',  color: '#1a1a1a', icon: '@' },
+    pinterest: { name: 'Pinterest', short: 'Pin',      color: '#BD081C', icon: '📌' }
+  };
+
+  const POST_TYPES = ['Post', 'Carrossel', 'Reels', 'Stories', 'Vídeo', 'Live', 'Artigo', 'Thread'];
+
+  const STATUSES = [
+    { value: 'ideia',     label: 'Ideia',     section: 'Ideias' },
+    { value: 'rascunho',  label: 'Rascunho',  section: 'Rascunhos' },
+    { value: 'aprovado',  label: 'Aprovado',  section: 'Aprovados' },
+    { value: 'agendado',  label: 'Agendado',  section: 'Agendados' },
+    { value: 'publicado', label: 'Publicado', section: 'Publicados' }
+  ];
+  const STATUS_TO_SECTION = Object.fromEntries(STATUSES.map(s => [s.value, s.section]));
+  const SECTION_TO_STATUS = Object.fromEntries(STATUSES.map(s => [s.section, s.value]));
+
+  const ASANA_COLORS = {
+    'dark-teal': '#00c896', 'dark-blue': '#3b82f6', 'dark-purple': '#a855f7',
+    'dark-green': '#10b981', 'dark-orange': '#f97316', 'dark-pink': '#ec4899',
+    'dark-red': '#ef4444', 'none': '#00c896'
+  };
+
+  const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  // ─── STATE ───────────────────────────────────────────────
+  let token = localStorage.getItem(TOKEN_KEY);
+  let workspaceGid = null;
+  let userName = '';
+  let projects = [];
+  let activeProjectGid = null;
+  let currentYear = new Date().getFullYear();
+  let currentMonth = new Date().getMonth();
+  let selectedDate = null;
+  const saveTimers = {};
+
+  // ─── API ─────────────────────────────────────────────────
+  async function asana(method, path, body) {
+    const opts = {
+      method,
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+    };
+    if (body) opts.body = JSON.stringify({ data: body });
+    const res = await fetch(`${API_BASE}${path}`, opts);
+    if (!res.ok) {
+      const text = await res.text();
+      let msg = `HTTP ${res.status}`;
+      try {
+        const j = JSON.parse(text);
+        if (j.errors) msg += ': ' + j.errors.map(e => e.message).join(', ');
+      } catch { msg += ': ' + text.substring(0, 200); }
+      throw new Error(msg);
+    }
+    if (res.status === 204) return null;
+    return (await res.json()).data;
+  }
+
+  async function asanaGetAll(path, opt_fields) {
+    let results = [], offset = '';
+    while (true) {
+      const sep = path.includes('?') ? '&' : '?';
+      let url = `${path}${sep}limit=100`;
+      if (opt_fields) url += `&opt_fields=${opt_fields}`;
+      if (offset)     url += `&offset=${offset}`;
+      const res = await fetch(`${API_BASE}${url}`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      results = results.concat(json.data);
+      if (json.next_page?.offset) offset = json.next_page.offset; else break;
+    }
+    return results;
+  }
+
+  // ─── AUTH ─────────────────────────────────────────────────
+  async function connectFromInput() {
+    const t = document.getElementById('tokenInput').value.trim();
+    if (!t) { alert('Cole o token primeiro'); return; }
+    token = t;
+    showLoading('Conectando ao Asana...');
+    try {
+      const me = await asana('GET', '/users/me?opt_fields=name,workspaces.gid');
+      workspaceGid = me.workspaces[0].gid;
+      userName = me.name;
+      localStorage.setItem(TOKEN_KEY, token);
+      showApp();
+      await syncFromAsana();
+    } catch (err) {
+      hideLoading();
+      alert('Erro ao conectar: ' + err.message + '\n\nVerifique se o token é válido.');
+      token = null;
+    }
+  }
+
+  async function init() {
+    if (!token) { document.getElementById('loginScreen').style.display = 'block'; return; }
+    showLoading('Carregando...');
+    try {
+      const me = await asana('GET', '/users/me?opt_fields=name,workspaces.gid');
+      workspaceGid = me.workspaces[0].gid;
+      userName = me.name;
+      showApp();
+      await syncFromAsana();
+    } catch (err) {
+      hideLoading();
+      alert('Token inválido ou expirado: ' + err.message);
+      localStorage.removeItem(TOKEN_KEY);
+      token = null;
+      document.getElementById('loginScreen').style.display = 'block';
+    }
+  }
+
+  function showApp() {
+    document.getElementById('connectionStatus').textContent = '● ' + userName;
+    document.getElementById('connectionStatus').style.display = '';
+    document.getElementById('syncBtn').style.display = '';
+    document.getElementById('disconnectBtn').style.display = '';
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+  }
+
+  function disconnect() {
+    if (!confirm('Desconectar e limpar token deste navegador?')) return;
+    localStorage.removeItem(TOKEN_KEY);
+    location.reload();
+  }
+
+  // ─── SYNC ─────────────────────────────────────────────────
+  async function syncFromAsana() {
+    showLoading('Sincronizando com Asana...');
+    try {
+      const allProjects = await asanaGetAll(
+        `/workspaces/${workspaceGid}/projects?archived=false`,
+        'name,color'
+      );
+      const filtered = allProjects.filter(p => p.name && p.name.startsWith(PROJECT_PREFIX));
+      projects = [];
+      for (const p of filtered) {
+        const sections = await asana('GET', `/projects/${p.gid}/sections?opt_fields=name`);
+        const tasks = await asanaGetAll(
+          `/projects/${p.gid}/tasks?completed_since=2000-01-01`,
+          'name,due_on,notes,completed,memberships.section.gid,memberships.section.name'
+        );
+        projects.push({
+          gid: p.gid,
+          name: p.name.replace(PROJECT_PREFIX, ''),
+          fullName: p.name,
+          color: ASANA_COLORS[p.color] || '#00c896',
+          asanaColor: p.color,
+          sections,
+          tasks
+        });
+      }
+      if (!activeProjectGid && projects.length > 0) activeProjectGid = projects[0].gid;
+      else if (activeProjectGid && !projects.find(p => p.gid === activeProjectGid)) {
+        activeProjectGid = projects[0]?.gid || null;
+      }
+      buildYearSelect();
+      hideLoading();
+      render();
+    } catch (err) {
+      hideLoading();
+      alert('Erro ao sincronizar: ' + err.message);
+    }
+  }
+
+  // ─── TASK PARSE/BUILD ─────────────────────────────────────
+  function parseTaskNotes(notes) {
+    notes = notes || '';
+    const post = { caption: '', notes: '', platform: 'instagram', type: 'Post', time: '', hashtags: '' };
+    const platMatch = notes.match(/PLATAFORMA:\s*([^\n]+)/i);
+    if (platMatch) {
+      const p = platMatch[1].trim().toLowerCase();
+      const found = Object.keys(PLATFORMS).find(k => p.includes(k) || p.includes(PLATFORMS[k].name.toLowerCase()));
+      if (found) post.platform = found;
+    }
+    const typeMatch = notes.match(/TIPO:\s*([^\n]+)/i);
+    if (typeMatch) {
+      const t = typeMatch[1].trim();
+      const matched = POST_TYPES.find(pt => t.toLowerCase().includes(pt.toLowerCase()));
+      post.type = matched || 'Post';
+    }
+    const timeMatch = notes.match(/HORARIO:\s*(\d{1,2}):(\d{2})/i);
+    if (timeMatch) post.time = `${timeMatch[1].padStart(2,'0')}:${timeMatch[2]}`;
+    function extractSection(label) {
+      const ALL = ['LEGENDA','HASHTAGS','BRIEF','NOTAS','PLATAFORMA','TIPO','HORARIO'];
+      const startRe = new RegExp(`${label}:\\s*\\n?`, 'i');
+      const startMatch = notes.match(startRe);
+      if (!startMatch) return '';
+      const start = startMatch.index + startMatch[0].length;
+      let end = notes.length;
+      for (const lbl of ALL) {
+        if (lbl === label) continue;
+        const m = notes.substring(start).match(new RegExp(`\\n${lbl}:`, 'i'));
+        if (m) { const idx = start + m.index; if (idx < end) end = idx; }
+      }
+      return notes.substring(start, end).trim();
+    }
+    post.caption  = extractSection('LEGENDA');
+    post.hashtags = extractSection('HASHTAGS').replace(/\n+/g, ' ');
+    post.notes    = extractSection('BRIEF') || extractSection('NOTAS');
+    return post;
+  }
+
+  function buildTaskNotes(post) {
+    const platformName = (PLATFORMS[post.platform] || PLATFORMS.instagram).name;
+    return `PLATAFORMA: ${platformName}\nTIPO: ${post.type || 'Post'}\nHORARIO: ${post.time || ''}\n\nLEGENDA:\n${post.caption || ''}\n\nHASHTAGS:\n${post.hashtags || ''}\n\nBRIEF:\n${post.notes || ''}`;
+  }
+
+  function taskToPost(task) {
+    const post = parseTaskNotes(task.notes);
+    const nameMatch = task.name.match(/^\[(.+?)\]\s*(.+)$/);
+    post.title = nameMatch ? nameMatch[2] : task.name;
+    if (task.completed) post.status = 'publicado';
+    else if (task.memberships?.length > 0) {
+      const sectionName = task.memberships[0].section?.name;
+      post.status = SECTION_TO_STATUS[sectionName] || 'ideia';
+    } else post.status = 'ideia';
+    post.id     = task.gid;
+    post.due_on = task.due_on;
+    return post;
+  }
+
+  function buildTaskName(post) {
+    const short = (PLATFORMS[post.platform] || PLATFORMS.instagram).short;
+    return `[${short}] ${post.title || 'Sem título'}`;
+  }
+
+  // ─── UTILS ────────────────────────────────────────────────
+  function dateKey(year, month, day) {
+    return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  }
+  function getPosts(key) {
+    const project = activeProject();
+    if (!project) return [];
+    return project.tasks.filter(t => t.due_on === key).map(taskToPost);
+  }
+  function activeProject() { return projects.find(p => p.gid === activeProjectGid); }
+
+  function escapeHtml(s) {
+    return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function escapeAttr(s) { return escapeHtml(s); }
+
+  // ─── NAVIGATION ───────────────────────────────────────────
+  function buildYearSelect() {
+    const sel = document.getElementById('yearSelect');
+    sel.innerHTML = '';
+    for (let y = 2024; y <= 2030; y++) {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      if (y === currentYear) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  }
+  function changeMonth(delta) {
+    currentMonth += delta;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    if (currentMonth < 0)  { currentMonth = 11; currentYear--; }
+    document.getElementById('yearSelect').value = currentYear;
+    render();
+  }
+  function changeYear(y) { currentYear = parseInt(y); render(); }
+  function goToToday() {
+    const t = new Date();
+    currentYear = t.getFullYear(); currentMonth = t.getMonth();
+    selectedDate = dateKey(currentYear, currentMonth, t.getDate());
+    document.getElementById('yearSelect').value = currentYear;
+    render();
+  }
+
+  // ─── RENDER ───────────────────────────────────────────────
+  function render() {
+    document.getElementById('monthDisplay').textContent = `${MONTHS[currentMonth]} ${currentYear}`;
+    renderClients();
+    renderCalendar();
+    renderEditor();
+    renderStats();
+  }
+
+  function renderClients() {
+    const tabs = document.getElementById('clientTabs');
+    tabs.innerHTML = '';
+    if (projects.length === 0) {
+      tabs.innerHTML = '<span style="font-size:13px;color:var(--text-muted);">Nenhum cliente encontrado. Clique em "+ Novo Cliente".</span>';
+      return;
+    }
+    for (const p of projects) {
+      const isActive = p.gid === activeProjectGid;
+      const tab = document.createElement('div');
+      tab.className = 'client-tab' + (isActive ? ' active' : '');
+      tab.onclick = () => { activeProjectGid = p.gid; selectedDate = null; render(); };
+      tab.innerHTML = `
+        <span class="client-dot" style="background:${p.color}"></span>
+        <span>${escapeHtml(p.name)}</span>
+        <span class="client-count">${p.tasks.length}</span>
+      `;
+      tabs.appendChild(tab);
+    }
+  }
+
+  function renderCalendar() {
+    const grid = document.getElementById('daysGrid');
+    grid.innerHTML = '';
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth+1, 0).getDate();
+    const today = new Date();
+    const todayKey = dateKey(today.getFullYear(), today.getMonth(), today.getDate());
+    const project = activeProject();
+
+    for (let i = 0; i < firstDay; i++) {
+      const e = document.createElement('div');
+      e.className = 'day empty';
+      grid.appendChild(e);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key = dateKey(currentYear, currentMonth, d);
+      const posts = getPosts(key);
+      const div = document.createElement('div');
+      div.className = 'day';
+      if (key === todayKey) div.classList.add('today');
+      if (key === selectedDate) div.classList.add('selected');
+      div.onclick = () => { selectedDate = key; render(); };
+
+      const num = document.createElement('div');
+      num.className = 'day-number';
+      num.textContent = d;
+      div.appendChild(num);
+
+      const content = document.createElement('div');
+      content.className = 'day-content';
+      for (const p of posts.slice(0, 3)) {
+        const pill = document.createElement('div');
+        pill.className = 'post-pill';
+        pill.style.background = (PLATFORMS[p.platform] || {}).color || '#334155';
+        pill.title = `${(PLATFORMS[p.platform]||{}).name||''} - ${p.title}`;
+        pill.innerHTML = `<span>${(PLATFORMS[p.platform]||{}).icon||'•'}</span><span>${escapeHtml(p.title||'Sem título')}</span>`;
+        content.appendChild(pill);
+      }
+      if (posts.length > 3) {
+        const more = document.createElement('div');
+        more.className = 'post-pill';
+        more.style.background = 'rgba(255,255,255,0.06)';
+        more.style.color = 'var(--text-muted)';
+        more.textContent = `+${posts.length - 3} mais`;
+        content.appendChild(more);
+      }
+      div.appendChild(content);
+
+      if (posts.length > 0) {
+        const badge = document.createElement('div');
+        badge.className = 'post-count';
+        badge.style.background = project ? project.color : 'var(--teal)';
+        badge.textContent = posts.length;
+        div.appendChild(badge);
+      }
+      grid.appendChild(div);
+    }
+  }
+
+  function renderEditor() {
+    const editor = document.getElementById('editor');
+    if (!selectedDate) {
+      editor.innerHTML = `<div class="editor-empty"><div class="editor-empty-icon">📅</div><p>Selecione uma data no calendário para gerenciar o conteúdo</p></div>`;
+      return;
+    }
+    const project = activeProject();
+    if (!project) {
+      editor.innerHTML = `<div class="editor-empty"><p>Nenhum cliente disponível</p></div>`;
+      return;
+    }
+
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    const dateObj = new Date(y, m-1, d);
+    const dateLabel = dateObj.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+    const posts = getPosts(selectedDate);
+
+    let html = `
+      <div class="editor-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span style="width:6px;height:6px;border-radius:50%;background:${project.color}"></span>
+            <span style="font-size:11px;color:var(--teal);font-family:'Syne',sans-serif;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${escapeHtml(project.name)}</span>
+          </div>
+          <div class="editor-date" style="text-transform:capitalize">${dateLabel}</div>
+          <div class="editor-meta">${posts.length} ${posts.length===1?'conteúdo':'conteúdos'} planejado(s)</div>
+        </div>
+        <button class="primary" onclick="addPost()">+ Adicionar</button>
+      </div>
+      <div class="posts-list">
+    `;
+
+    posts.forEach(p => {
+      const pi = PLATFORMS[p.platform] || PLATFORMS.instagram;
+      html += `
+        <div class="post-card">
+          <div class="post-card-header">
+            <span class="platform-badge" id="badge-platform-${p.id}" style="background:${pi.color}">
+              <span>${pi.icon}</span>${pi.name}
+            </span>
+            <span class="status-badge status-${p.status}" id="badge-status-${p.id}">${(STATUSES.find(s=>s.value===p.status)||STATUSES[0]).label}</span>
+            <span class="save-indicator" id="save-${p.id}"></span>
+            <a href="https://app.asana.com/0/${project.gid}/${p.id}" target="_blank" class="asana-link">Abrir no Asana ↗</a>
+          </div>
+          <div class="form-grid">
+            <div class="form-row">
+              <label>Plataforma</label>
+              <select onchange="updateField('${p.id}','platform',this.value)">
+                ${Object.entries(PLATFORMS).map(([k,v])=>`<option value="${k}" ${p.platform===k?'selected':''}>${v.icon} ${v.name}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Tipo de Conteúdo</label>
+              <select onchange="updateField('${p.id}','type',this.value)">
+                ${POST_TYPES.map(t=>`<option value="${t}" ${p.type===t?'selected':''}>${t}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Status</label>
+              <select onchange="updateField('${p.id}','status',this.value)">
+                ${STATUSES.map(s=>`<option value="${s.value}" ${p.status===s.value?'selected':''}>${s.label}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Horário</label>
+              <input type="time" value="${p.time||''}" oninput="updateField('${p.id}','time',this.value)">
+            </div>
+            <div class="form-row full">
+              <label>Título / Tema</label>
+              <input type="text" value="${escapeAttr(p.title)}" placeholder="Ex.: 5 dicas de marketing digital" oninput="updateField('${p.id}','title',this.value)">
+            </div>
+            <div class="form-row full">
+              <label>Legenda / Copy</label>
+              <textarea placeholder="Texto do post, copy, descrição..." oninput="updateField('${p.id}','caption',this.value)">${escapeHtml(p.caption)}</textarea>
+            </div>
+            <div class="form-row full">
+              <label>Hashtags</label>
+              <input type="text" value="${escapeAttr(p.hashtags)}" placeholder="#marketing #conteudo #redes" oninput="updateField('${p.id}','hashtags',this.value)">
+            </div>
+            <div class="form-row full">
+              <label>Brief / Notas</label>
+              <textarea placeholder="Observações, referências, links, demandas de arte/vídeo..." oninput="updateField('${p.id}','notes',this.value)">${escapeHtml(p.notes)}</textarea>
+            </div>
+          </div>
+          <div class="post-actions">
+            <button class="danger" onclick="deletePost('${p.id}')">Excluir</button>
+            <button onclick="duplicatePost('${p.id}')">Duplicar</button>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+    if (posts.length === 0) {
+      html += `<div class="form-hint">Nenhum conteúdo planejado para este dia. Clique em <strong>"+ Adicionar"</strong> para criar ou use o <strong>Formulário do Asana</strong> para que a equipe registre demandas.</div>`;
+    }
+    html += `<button class="ghost add-post-btn" onclick="addPost()">+ Adicionar novo conteúdo</button>`;
+    editor.innerHTML = html;
+  }
+
+  function renderStats() {
+    const prefix = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
+    const project = activeProject();
+    const tasks = project ? project.tasks.filter(t => t.due_on?.startsWith(prefix)) : [];
+    let total=0, agendado=0, publicado=0, rascunho=0;
+    const platCount = {};
+    for (const t of tasks) {
+      const p = taskToPost(t); total++;
+      if (p.status==='agendado') agendado++;
+      if (p.status==='publicado') publicado++;
+      if (p.status==='rascunho'||p.status==='ideia') rascunho++;
+      platCount[p.platform] = (platCount[p.platform]||0)+1;
+    }
+    const top = Object.entries(platCount).sort((a,b)=>b[1]-a[1])[0];
+    const topName = top ? PLATFORMS[top[0]].name : '—';
+
+    document.getElementById('statsBar').innerHTML = `
+      <div class="stat-card"><div class="stat-icon">📊</div><div><div class="stat-val">${total}</div><div class="stat-lbl">Total no mês</div></div></div>
+      <div class="stat-card"><div class="stat-icon">📝</div><div><div class="stat-val">${rascunho}</div><div class="stat-lbl">Em elaboração</div></div></div>
+      <div class="stat-card"><div class="stat-icon">⏰</div><div><div class="stat-val">${agendado}</div><div class="stat-lbl">Agendados</div></div></div>
+      <div class="stat-card"><div class="stat-icon">✅</div><div><div class="stat-val">${publicado}</div><div class="stat-lbl">Publicados</div></div></div>
+      <div class="stat-card"><div class="stat-icon">⭐</div><div><div class="stat-val" style="font-size:14px;line-height:1.3">${topName}</div><div class="stat-lbl">Plataforma top</div></div></div>
+    `;
+  }
+
+  // ─── UPDATE / SAVE ────────────────────────────────────────
+  function updateField(taskGid, field, value) {
+    const project = activeProject();
+    if (!project) return;
+    const task = project.tasks.find(t => t.gid === taskGid);
+    if (!task) return;
+    const post = taskToPost(task);
+    post[field] = value;
+    task.notes = buildTaskNotes(post);
+    task.name  = buildTaskName(post);
+    if (field === 'status') task.completed = post.status === 'publicado';
+
+    if (field === 'platform') {
+      const pi = PLATFORMS[value] || PLATFORMS.instagram;
+      const badge = document.getElementById(`badge-platform-${taskGid}`);
+      if (badge) { badge.style.background = pi.color; badge.innerHTML = `<span>${pi.icon}</span>${pi.name}`; }
+    }
+    if (field === 'status') {
+      const badge = document.getElementById(`badge-status-${taskGid}`);
+      if (badge) { badge.className = `status-badge status-${value}`; badge.textContent = (STATUSES.find(s=>s.value===value)||STATUSES[0]).label; }
+    }
+    renderCalendar(); renderClients(); renderStats();
+    showSaveStatus(taskGid, 'saving');
+    if (saveTimers[taskGid]) clearTimeout(saveTimers[taskGid]);
+    saveTimers[taskGid] = setTimeout(() => saveTaskToAsana(taskGid), 1500);
+  }
+
+  async function saveTaskToAsana(taskGid) {
+    const project = activeProject();
+    if (!project) return;
+    const task = project.tasks.find(t => t.gid === taskGid);
+    if (!task) return;
+    const post = taskToPost(task);
+    try {
+      await asana('PUT', `/tasks/${taskGid}`, {
+        name: buildTaskName(post),
+        notes: buildTaskNotes(post),
+        due_on: post.due_on,
+        completed: post.status === 'publicado'
+      });
+      const targetSection = project.sections.find(s => s.name === STATUS_TO_SECTION[post.status]);
+      if (targetSection && task.memberships?.[0]?.section?.gid !== targetSection.gid) {
+        await asana('POST', `/sections/${targetSection.gid}/addTask`, { task: taskGid });
+        task.memberships = [{ section: { gid: targetSection.gid, name: targetSection.name } }];
+      }
+      showSaveStatus(taskGid, 'saved');
+    } catch (err) {
+      showSaveStatus(taskGid, 'error', err.message);
+    }
+  }
+
+  function showSaveStatus(taskGid, state) {
+    const el = document.getElementById(`save-${taskGid}`);
+    if (!el) return;
+    el.className = `save-indicator ${state}`;
+    if (state === 'saving') el.textContent = '◐ salvando...';
+    else if (state === 'saved') { el.textContent = '✓ salvo'; setTimeout(() => { if (el.textContent==='✓ salvo') el.textContent=''; }, 2000); }
+    else el.textContent = '✕ erro';
+  }
+
+  // ─── ADD / DELETE / DUPLICATE ─────────────────────────────
+  async function addPost() {
+    const project = activeProject();
+    if (!project || !selectedDate) return;
+    const ideias = project.sections.find(s => s.name === 'Ideias');
+    if (!ideias) { alert('Seção "Ideias" não encontrada. Recrie o cliente.'); return; }
+    showLoading('Criando conteúdo...');
+    try {
+      const post = { platform: 'instagram', type: 'Post', time: '', title: 'Novo conteúdo', caption: '', hashtags: '', notes: '' };
+      const newTask = await asana('POST', '/tasks', {
+        name: buildTaskName(post),
+        notes: buildTaskNotes(post),
+        due_on: selectedDate,
+        projects: [project.gid],
+        memberships: [{ project: project.gid, section: ideias.gid }]
+      });
+      newTask.memberships = [{ section: { gid: ideias.gid, name: 'Ideias' } }];
+      project.tasks.push(newTask);
+      hideLoading();
+      render();
+    } catch (err) { hideLoading(); alert('Erro: ' + err.message); }
+  }
+
+  async function deletePost(taskGid) {
+    if (!confirm('Excluir este conteúdo do Asana? Ação irreversível.')) return;
+    showLoading('Excluindo...');
+    try {
+      await asana('DELETE', `/tasks/${taskGid}`);
+      const project = activeProject();
+      project.tasks = project.tasks.filter(t => t.gid !== taskGid);
+      hideLoading(); render(); showToast('Conteúdo excluído');
+    } catch (err) { hideLoading(); alert('Erro: ' + err.message); }
+  }
+
+  async function duplicatePost(taskGid) {
+    const project = activeProject();
+    const task = project.tasks.find(t => t.gid === taskGid);
+    if (!task) return;
+    showLoading('Duplicando...');
+    try {
+      const sectionGid  = task.memberships?.[0]?.section?.gid || project.sections.find(s=>s.name==='Ideias')?.gid;
+      const sectionName = task.memberships?.[0]?.section?.name || 'Ideias';
+      const newTask = await asana('POST', '/tasks', {
+        name: task.name + ' (cópia)',
+        notes: task.notes,
+        due_on: task.due_on,
+        projects: [project.gid],
+        memberships: [{ project: project.gid, section: sectionGid }]
+      });
+      newTask.memberships = [{ section: { gid: sectionGid, name: sectionName } }];
+      project.tasks.push(newTask);
+      hideLoading(); render(); showToast('Conteúdo duplicado');
+    } catch (err) { hideLoading(); alert('Erro: ' + err.message); }
+  }
+
+  // ─── PROFILE MODAL ────────────────────────────────────────
+  function openProfileModal() {
+    document.getElementById('profileModal').classList.add('show');
+    document.getElementById('profileNameInput').value = '';
+    setTimeout(() => document.getElementById('profileNameInput').focus(), 50);
+  }
+  function closeProfileModal() { document.getElementById('profileModal').classList.remove('show'); }
+
+  async function createProfile() {
+    const name = document.getElementById('profileNameInput').value.trim();
+    if (!name) { alert('Digite o nome do cliente'); return; }
+    const color = document.getElementById('profileColorInput').value;
+    closeProfileModal();
+    showLoading('Criando projeto no Asana...');
+    try {
+      const project = await asana('POST', '/projects', {
+        name: PROJECT_PREFIX + name,
+        workspace: workspaceGid,
+        color: color
+      });
+      const sectionNames = ['Ideias','Rascunhos','Aprovados','Agendados','Publicados'];
+      const sections = [];
+      for (const sn of sectionNames) {
+        const sec = await asana('POST', `/projects/${project.gid}/sections`, { name: sn });
+        sections.push(sec);
+      }
+      projects.push({
+        gid: project.gid,
+        name: name,
+        fullName: project.name,
+        color: ASANA_COLORS[color] || '#00c896',
+        asanaColor: color,
+        sections,
+        tasks: []
+      });
+      activeProjectGid = project.gid;
+      hideLoading(); render();
+      showToast('Cliente criado: ' + name);
+    } catch (err) { hideLoading(); alert('Erro: ' + err.message); }
+  }
+
+  // ─── UI HELPERS ───────────────────────────────────────────
+  function showLoading(text) {
+    document.getElementById('loadingText').textContent = text || 'Carregando...';
+    document.getElementById('loadingOverlay').classList.add('show');
+  }
+  function hideLoading() { document.getElementById('loadingOverlay').classList.remove('show'); }
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // ─── EVENTS ───────────────────────────────────────────────
+  document.getElementById('profileModal').addEventListener('click', e => { if (e.target.id==='profileModal') closeProfileModal(); });
+  document.addEventListener('keydown', e => { if (e.key==='Escape') closeProfileModal(); });
+  document.getElementById('tokenInput').addEventListener('keydown', e => { if (e.key==='Enter') connectFromInput(); });
+
+  init();
+</script>
+</body>
+</html>
